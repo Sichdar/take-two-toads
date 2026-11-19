@@ -1,0 +1,13 @@
+{
+  "name": "scales-and-simples",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A cozy apothecary puzzle for phones: diagnose villagers' odd ailments and balance three brass scales.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/",
+    "check": "node tools/check-recipes.js",
+    "serve": "node tools/serve.js"
+  }
+}
