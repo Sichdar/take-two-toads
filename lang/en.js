@@ -1,7 +1,7 @@
 // Every line of text in the game, by key. _word_ marks a symptom (underlined in the game).
 // {name} style gaps are filled in by t(). Never glue sentences together in code.
 export const EN = {
-  'title': 'Scales & Simples',
+  'title': 'Take Two Toads',
   'subtitle': 'An apothecary of Little Wendle',
   'cover.continue': 'Continue',
   'cover.new': 'New game',

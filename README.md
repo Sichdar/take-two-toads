@@ -1,8 +1,8 @@
-# Scales & Simples
+# Take Two Toads
 
 A cozy apothecary puzzle for phones. Villagers of Little Wendle bring odd ailments: bread that floats, a heart that's too heavy, a knight afraid of geese. Read their complaints, work out what they need, and balance three brass scales (**Heat**, **Spirit**, **Weight**) with herbs whose effects you discover by brewing.
 
-**Play:** https://sichdar.github.io/scales-and-simples/ (works offline once loaded; add it to your home screen)
+**Play:** https://sichdar.github.io/take-two-toads/ (works offline once loaded; add it to your home screen)
 
 Free, no ads, no purchases, no tracking. Your game is saved only on your device.
 

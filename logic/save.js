@@ -1,6 +1,7 @@
 // Saving on the device, with a backup slot, versioned upgrades and a checked export code.
 import { SAVE_VERSION } from './state.js';
 
+// Keys keep the old title on purpose: changing them would lose existing saves.
 export const SAVE_KEY = 'scales-and-simples.save';
 export const BACKUP_KEY = 'scales-and-simples.save.backup';
 

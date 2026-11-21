@@ -13,7 +13,7 @@ import { plantSVG } from './art/plants.js';
 import { scaleSVG, scaleIcon, scaleX, cauldronSVG, bustSVG, coinSVG, bookSVG, gearSVG, starStamp, makePaper } from './art/scenes.js';
 
 export const VERSION = '0.1.0';
-const REPO = 'https://github.com/Sichdar/scales-and-simples';
+const REPO = 'https://github.com/Sichdar/take-two-toads';
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const PREFS_KEY = 'scales-and-simples.prefs';
 
@@ -110,7 +110,7 @@ function renderCover() {
   return `<main class="page cover">
     <div class="cover-inner">
       <p class="cover-kicker">${esc(t('subtitle'))}</p>
-      <h1 class="title"><span class="initial">S</span>cales &amp; Simples</h1>
+      <h1 class="title"><span class="initial">T</span>ake Two Toads</h1>
       <div class="cover-art">${cauldronSVG()}</div>
       ${hasSave ? `<button class="big" data-act="continue">${esc(t('cover.continue'))}</button>` : ''}
       <button class="${hasSave ? 'mid' : 'big'}" data-act="new">${esc(ui.newConfirm ? t('cover.newConfirm') : t('cover.new'))}</button>
