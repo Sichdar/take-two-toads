@@ -115,3 +115,35 @@ test('save, load, backup slot and export code', () => {
   assert.equal(importCode(code.slice(0, -1) + 'x'), null); // mistyped code is caught
   assert.equal(importCode('hello'), null);
 });
+
+test('level 3 starts at 70 reputation (self-review fix)', () => {
+  assert.equal(G.levelFor(69), 2);
+  assert.equal(G.levelFor(70), 3);
+});
+
+test('each finished day is kept for the playtest log, with its length', async () => {
+  const { playtestLog } = await import('../logic/playtest.js');
+  let s = G.openShop(G.newGame(77), 1_000_000);
+  while (s.phase !== 'evening') {
+    s = G.addToCauldron(s, Object.keys(s.shelf)[0]).state;
+    s = G.brew(s);
+    s = G.nextCustomer(s, 1_000_000 + 5 * 60_000);
+  }
+  assert.equal(s.history.length, 1);
+  const h = s.history[0];
+  assert.equal(h.day, 1);
+  assert.equal(h.minutes, 5);
+  assert.equal(h.coins, s.coins);
+  assert.equal(h.perfect + h.ok + h.flops, 5);
+  const text = playtestLog(s, { version: 'test', date: new Date('2026-11-21T12:00:00Z') });
+  assert.match(text, /^Take Two Toads playtest log · vtest · 2026-11-21/);
+  assert.match(text, /Day 1: 5 min · earned \d+, coins at end \d+/);
+  assert.match(text, /All brews: 5, stars per brew/);
+});
+
+test('the playtest log works on an old save without history', async () => {
+  const { playtestLog } = await import('../logic/playtest.js');
+  const s = G.newGame(3);
+  delete s.history;
+  assert.match(playtestLog(s), /No finished days yet\./);
+});

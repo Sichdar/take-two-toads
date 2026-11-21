@@ -11,7 +11,7 @@ export const BALANCE = {
   wrenBundle: 2,
   cauldronSlots: 4,
   // Reputation needed (total) for each level, index = level - 1.
-  levels: [0, 30, 100, 190, 280],
+  levels: [0, 30, 70, 190, 280],
   repPerStars: [0, 1, 2, 3], // flop, ★, ★★, ★★★
   // Price = base + perScale × (number of target scales).
   priceBase: 4,
@@ -26,4 +26,5 @@ export const BALANCE = {
   ],
   newerAilmentWeight: 2,     // ailments from the current level are this much more likely
   maxRecords: 300,
+  maxHistory: 30,            // finished days kept for the playtest log
 };

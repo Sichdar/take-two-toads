@@ -47,6 +47,7 @@ export function newGame(seed) {
     current: 0,
     cauldron: [],
     records: [],
+    history: [],   // one line per finished day, for the playtest log
     // The first lesson tells you Hessa's need, so its gold mark shows from the start.
     ailmentsSeen: { chillcough: { full: true, clues: [] } },
     returning: [],
@@ -101,9 +102,11 @@ export function startMorning(state, { first = false } = {}) {
   return s;
 }
 
-export function openShop(state) {
+// `now` (milliseconds) times the day for the playtest log; tests can pass a fixed number.
+export function openShop(state, now = Date.now()) {
   const s = clone(state);
   s.phase = 'shop';
+  if (s.dayLog && !s.dayLog.openedAt) s.dayLog.openedAt = now;
   return s;
 }
 
@@ -185,13 +188,20 @@ export function sendAway(state) {
   return s;
 }
 
-export function nextCustomer(state) {
+export function nextCustomer(state, now = Date.now()) {
   if (state.phase !== 'result') return state;
   const s = clone(state);
   s.current += 1;
   s.lastResult = null;
   if (s.current >= s.queue.length) {
     s.phase = 'evening';
+    const log = s.dayLog || {};
+    const day = {
+      day: s.day, coins: s.coins, earned: log.coins || 0, perfect: log.perfect || 0, ok: log.ok || 0,
+      flops: log.flops || 0, rep: s.rep,
+      minutes: log.openedAt ? Math.round((now - log.openedAt) / 6000) / 10 : null,
+    };
+    s.history = [...(s.history || []).filter(h => h.day !== s.day), day].slice(-BALANCE.maxHistory);
     const lvl = levelFor(s.rep);
     if (lvl > s.level) {
       for (let l = s.level + 1; l <= lvl; l++) {

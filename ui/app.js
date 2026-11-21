@@ -9,10 +9,11 @@ import { SCALES } from '../logic/brew.js';
 import { solve, isKnown, fullyKnown } from '../logic/herbal.js';
 import { targetScales } from '../logic/quality.js';
 import { randomSeed } from '../logic/rng.js';
+import { playtestLog } from '../logic/playtest.js';
 import { plantSVG } from './art/plants.js';
 import { scaleSVG, scaleIcon, scaleX, cauldronSVG, bustSVG, coinSVG, bookSVG, gearSVG, starStamp, makePaper } from './art/scenes.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.1.1';
 const REPO = 'https://github.com/Sichdar/take-two-toads';
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const PREFS_KEY = 'scales-and-simples.prefs';
@@ -36,7 +37,7 @@ let screen = 'cover';
 let overlay = null;
 let bookTab = 'ing';
 let shownShop = null; // which customer the shop screen was last drawn for
-const ui = { newConfirm: false, resetConfirm: false, setMsg: '', eveMsg: '', exportText: '' };
+const ui = { newConfirm: false, resetConfirm: false, setMsg: '', eveMsg: '', exportText: '', logText: '' };
 
 const app = document.getElementById('app');
 
@@ -388,7 +389,10 @@ function renderSettings() {
       <div class="set-row"><span>${esc(t('set.motion'))}</span><button class="tab on" data-act="motion">${esc(prefs.reducedMotion ? t('set.on') : t('set.off'))}</button></div>
       ${state ? `<h3 class="rubric">${esc(t('set.export'))}</h3>
         <p class="small">${esc(t('set.exportNote'))}</p>
-        ${ui.exportText ? `<textarea readonly class="code" id="export-box">${esc(ui.exportText)}</textarea><button class="mid" data-act="copy">${esc(t('set.copy'))}</button>` : `<button class="mid" data-act="export">${esc(t('set.export'))}</button>`}` : ''}
+        ${ui.exportText ? `<textarea readonly class="code" id="export-box">${esc(ui.exportText)}</textarea><button class="mid" data-act="copy">${esc(t('set.copy'))}</button>` : `<button class="mid" data-act="export">${esc(t('set.export'))}</button>`}
+        <h3 class="rubric">${esc(t('set.log'))}</h3>
+        <p class="small">${esc(t('set.logNote'))}</p>
+        ${ui.logText ? `<textarea readonly class="code log" id="log-box">${esc(ui.logText)}</textarea><button class="mid" data-act="copylog">${esc(t('set.copy'))}</button>` : `<button class="mid" data-act="playlog">${esc(t('set.log'))}</button>`}` : ''}
       <h3 class="rubric">${esc(t('set.import'))}</h3>
       <p class="small">${esc(t('set.importNote'))}</p>
       <textarea class="code" id="import-box" placeholder="SS1...."></textarea>
@@ -445,7 +449,7 @@ function set(next, { save = true, partial = false } = {}) {
 
 function openOverlay(name) {
   overlay = name;
-  ui.setMsg = ''; ui.exportText = ''; ui.resetConfirm = false;
+  ui.setMsg = ''; ui.exportText = ''; ui.logText = ''; ui.resetConfirm = false;
   try { history.pushState({ ov: name }, ''); } catch { /* ignore */ }
   render();
 }
@@ -500,10 +504,12 @@ function act(name, el) {
     case 'text': prefs.textSize = d.size; savePrefs(); render(); break;
     case 'motion': prefs.reducedMotion = !prefs.reducedMotion; savePrefs(); render(); break;
     case 'export': ui.exportText = exportCode(state); render(); break;
-    case 'copy': {
-      const box = document.getElementById('export-box');
+    case 'playlog': ui.logText = playtestLog(state, { version: VERSION }); render(); break;
+    case 'copy': case 'copylog': {
+      const box = document.getElementById(name === 'copy' ? 'export-box' : 'log-box');
+      const text = name === 'copy' ? ui.exportText : ui.logText;
       const done = () => { ui.setMsg = t('set.copied'); render(); };
-      if (navigator.clipboard) navigator.clipboard.writeText(ui.exportText).then(done, () => { box.select(); });
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => { box.select(); });
       else { box.select(); document.execCommand('copy'); done(); }
       break;
     }

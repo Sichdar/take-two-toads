@@ -234,6 +234,7 @@ h3 { font-size: 1.1rem; margin-top: 0.9rem; }
 .settings .set-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .settings .tabs { margin: 4px 0; }
 textarea.code { width: 100%; min-height: 70px; font: 0.75rem monospace; background: rgba(255, 252, 244, 0.8); border: 1.5px solid var(--ink); border-radius: 8px; padding: 6px; }
+textarea.code.log { min-height: 170px; white-space: pre-wrap; }
 
 /* --- feedback ------------------------------------------------------------------------------ */
 .tip {

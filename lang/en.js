@@ -135,6 +135,8 @@ export const EN = {
   'set.exportNote': 'Copy this code somewhere safe. Paste it into Import to bring your game back.',
   'set.copy': 'Copy',
   'set.copied': 'Copied.',
+  'set.log': 'Copy playtest log',
+  'set.logNote': 'A short summary of your last 3 days (coins, stars, flops, times) to paste into a message for the maker. Nothing is sent by the game.',
   'set.import': 'Import save',
   'set.importNote': 'Paste a save code, then tap Load.',
   'set.load': 'Load',
