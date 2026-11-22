@@ -187,7 +187,10 @@ h3 { font-size: 1.1rem; margin-top: 0.9rem; }
 .q { position: absolute; top: 0; left: 5px; font-family: var(--head); font-size: 1.3rem; color: var(--rubric); }
 .key { display: none; }
 @media (hover: hover) and (pointer: fine) { .key { display: block; position: absolute; bottom: 1px; left: 4px; font-size: 0.6rem; opacity: 0.5; } }
-.ing.hint { animation: hint 1.2s ease-in-out infinite; }
+.ing.hint, .slot.hint, .cauldron.hint { animation: hint 1.2s ease-in-out infinite; }
+.cauldron.hint { border-radius: 50%; }
+.scale-row.new-scale { animation: slide-in 0.9s ease-out both; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(-28px); } }
 @keyframes hint { 50% { box-shadow: 0 0 0 4px rgba(168, 50, 42, 0.45); } }
 .shop-foot { text-align: center; }
 

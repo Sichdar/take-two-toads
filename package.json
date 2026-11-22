@@ -1,6 +1,6 @@
 {
   "name": "take-two-toads",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "A cozy apothecary puzzle for phones: diagnose villagers' odd ailments and balance three brass scales.",
   "type": "module",

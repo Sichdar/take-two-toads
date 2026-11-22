@@ -2,6 +2,7 @@
 // villager: who usually brings it. Text lives in lang/en.js under ail.<id>.
 export const AILMENTS = [
   { id: 'chillcough',   level: 1, target: { H: 2 },                villager: 'hessa' },
+  { id: 'kettlehead',   level: 1, target: { H: -2 },               villager: 'pellam' },
   { id: 'jitters',      level: 1, target: { S: -2 },               villager: 'tamsin' },
   { id: 'gloom',        level: 1, target: { S: 2 },                villager: 'hobb' },
   { id: 'floatingbread',level: 1, target: { W: 4 },                villager: 'bram' },

@@ -7,6 +7,8 @@ import { mix, countIds } from './brew.js';
 import { score } from './quality.js';
 import { solve, newlyKnown } from './herbal.js';
 import { pickDay } from './customers.js';
+import { tutorialDay } from './tutorial.js';
+import { TUTORIAL_KNOWN } from '../data/tutorial.js';
 import { makeRng, hashSeed } from './rng.js';
 
 export const SAVE_VERSION = 1;
@@ -31,10 +33,12 @@ export function slots(state) {
   return state.upgrades.slot5 ? 5 : BALANCE.cauldronSlots;
 }
 
-export function newGame(seed) {
+// tutorial: true starts with one scale on day 1, a second on day 2, all three on day 3.
+export function newGame(seed, { tutorial = false } = {}) {
   const s = {
     saveVersion: SAVE_VERSION,
     seed: seed >>> 0,
+    tutorial: !!tutorial,
     day: 1,
     phase: 'morning',
     coins: BALANCE.startCoins,
@@ -60,6 +64,7 @@ export function newGame(seed) {
     notesSeen: {},
     settings: { textSize: 'M', reducedMotion: false },
   };
+  if (tutorial) for (const id of TUTORIAL_KNOWN) s.ailmentsSeen[id] = { full: true, clues: [] };
   return startMorning(s, { first: true });
 }
 
@@ -90,7 +95,7 @@ export function startMorning(state, { first = false } = {}) {
       report.wren[id] = (report.wren[id] || 0) + 1;
     }
   }
-  s.queue = pickDay({ seed: s.seed, day: s.day, level: s.level, returning: s.returning });
+  s.queue = pickDay({ seed: s.seed, day: s.day, level: s.level, returning: s.returning, plan: tutorialDay(s) });
   s.returning = [];
   s.current = 0;
   s.cauldron = [];

@@ -33,6 +33,7 @@ export const EN = {
   'vil.nell': 'Nell the Milkmaid', 'vil.goose': 'The Goose',
 
   'ail.chillcough': 'Chill-cough', 'say.chillcough': "I've been _shivering_ all week, dear, and this _cough_ won't leave me.",
+  'ail.kettlehead': 'Kettle-head', 'say.kettlehead': "My helmet's a _kettle_ and I'm _sweating_ buckets on watch.",
   'ail.jitters': 'Jitters', 'say.jitters': "I _can't sit still_! My loom has given up on me.",
   'ail.gloom': 'Gloom', 'say.gloom': "A _heavy heart_, apothecary. And I can't stop _yawning_.",
   'ail.floatingbread': 'Floating bread', 'say.floatingbread': 'My bread _floats away_ the moment it leaves the oven!',
@@ -70,6 +71,10 @@ export const EN = {
   'shop.target': 'needs {value}',
 
   'note.first': 'Hessa is shivering: she needs warming. Watch the Heat scale.',
+  'note.brew': 'Now tap the cauldron to brew.',
+  'note.cool': 'Sir Pellam is overheating: he needs cooling. Try the herb marked ?',
+  'note.offMark': 'Off the mark! Tap the herb in the cauldron to take it back.',
+  'note.newScale': 'A new scale: {scale}. Read the underlined words, then guess.',
   'note.mark': 'Gold marks show what an ailment needs, once you know it.',
   'note.unknownAilment': 'A new ailment. Read the underlined words, then guess.',
   'note.remove': 'Tap an herb in the cauldron to take it back.',
@@ -130,6 +135,7 @@ export const EN = {
   'set.title': 'Settings',
   'set.text': 'Text size',
   'set.motion': 'Reduced motion',
+  'set.tutorial': 'Step-by-step first days (new games)',
   'set.on': 'On', 'set.off': 'Off',
   'set.export': 'Export save',
   'set.exportNote': 'Copy this code somewhere safe. Paste it into Import to bring your game back.',

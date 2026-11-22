@@ -10,10 +10,11 @@ import { solve, isKnown, fullyKnown } from '../logic/herbal.js';
 import { targetScales } from '../logic/quality.js';
 import { randomSeed } from '../logic/rng.js';
 import { playtestLog } from '../logic/playtest.js';
+import { tutorialDay, visibleScales, ingredientShown } from '../logic/tutorial.js';
 import { plantSVG } from './art/plants.js';
 import { scaleSVG, scaleIcon, scaleX, cauldronSVG, bustSVG, coinSVG, bookSVG, gearSVG, starStamp, makePaper } from './art/scenes.js';
 
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 const REPO = 'https://github.com/Sichdar/take-two-toads';
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const PREFS_KEY = 'scales-and-simples.prefs';
@@ -29,7 +30,7 @@ const storage = (() => {
   }
 })();
 
-let prefs = { textSize: 'M', reducedMotion: false };
+let prefs = { textSize: 'M', reducedMotion: false, tutorial: true };
 try { prefs = { ...prefs, ...JSON.parse(storage.getItem(PREFS_KEY) || '{}') }; } catch { /* defaults */ }
 
 let state = null;
@@ -49,6 +50,9 @@ const fmtTarget = target => targetScales(target).map(k => `${scaleName(k)} ${sig
 const ingName = id => t(`ing.${id}`);
 const symptoms = text => esc(text).replace(/_(.+?)_/g, '<u class="sym" data-act="sym">$1</u>');
 const knowledge = () => solve(state.records);
+const shownScales = () => visibleScales(state);
+const onShown = k => shownScales().includes(k);
+const shownChips = obj => Object.fromEntries(Object.entries(obj).filter(([id]) => ingredientShown(state, id)));
 
 function applyPrefs() {
   document.documentElement.dataset.text = prefs.textSize;
@@ -84,7 +88,7 @@ function shake(selector) {
 }
 
 function ownedIds() {
-  return INGREDIENTS.filter(i => state.shelf[i.id] > 0).map(i => i.id);
+  return INGREDIENTS.filter(i => state.shelf[i.id] > 0 && ingredientShown(state, i.id)).map(i => i.id);
 }
 
 // --- top bar --------------------------------------------------------------------------------
@@ -126,8 +130,8 @@ function renderMorning() {
   const r = state.morningReport || { harvest: {}, wren: {}, wrenNew: {} };
   return `<section class="sheet">
     <h2 class="rubric">${esc(t('morning.title', { day: state.day }))}</h2>
-    ${state.day === 1 ? `<p>${esc(t('morning.first'))}</p><div class="chips">${chips(state.shelf)}</div>` : ''}
-    ${Object.keys(r.harvest).length ? `<p>${esc(t('morning.garden'))}</p><div class="chips">${chips(r.harvest)}</div>` : ''}
+    ${state.day === 1 ? `<p>${esc(t('morning.first'))}</p><div class="chips">${chips(shownChips(state.shelf))}</div>` : ''}
+    ${Object.keys(shownChips(r.harvest)).length ? `<p>${esc(t('morning.garden'))}</p><div class="chips">${chips(shownChips(r.harvest))}</div>` : ''}
     ${Object.keys(r.wrenNew).length ? `<p>${esc(t('morning.wrenNew'))}</p><div class="chips">${chips(r.wrenNew)}</div>` : ''}
     ${Object.keys(r.wren).length ? `<p>${esc(t('morning.wren'))}</p><div class="chips">${chips(r.wren)}</div>` : ''}
     <p>${esc(t('morning.queue', { n: state.queue.length }))}</p>
@@ -136,8 +140,41 @@ function renderMorning() {
 }
 
 // --- shop -----------------------------------------------------------------------------------
+// Step-by-step start only: the herbs in the cauldron push a scale away from its gold mark.
+function offMark(cust) {
+  const seen = state.ailmentsSeen[cust.ailment];
+  if (!seen || !seen.full || !state.cauldron.length) return false;
+  const target = AILMENT_BY_ID[cust.ailment].target;
+  const know = knowledge();
+  return targetScales(target).some(k => {
+    let v = 0;
+    for (const id of state.cauldron) if (isKnown(know, id, k)) v += know.exact[id][k];
+    return v !== 0 && (Math.sign(v) !== Math.sign(target[k]) || Math.abs(v) > Math.abs(target[k]));
+  });
+}
+
+// The first visitor of the day who needs the scale that slides in today.
+function firstOnNewScale(plan) {
+  if (!plan || !plan.newScale) return -1;
+  return state.queue.findIndex(c => AILMENT_BY_ID[c.ailment].target[plan.newScale] !== undefined);
+}
+
+function tutorialNote(cust, plan) {
+  if (offMark(cust)) return t('note.offMark');
+  const seen = state.ailmentsSeen[cust.ailment];
+  if (state.day === 1 && cust.ailment === 'chillcough') return state.cauldron.length ? t('note.brew') : t('note.first');
+  if (state.day === 1 && cust.ailment === 'kettlehead') return t('note.cool');
+  if (state.current === firstOnNewScale(plan) && !seen) return t('note.newScale', { scale: scaleName(plan.newScale) });
+  if (!seen) return t('note.unknownAilment');
+  if (state.day === 2 && seen.full) return t('note.mark');
+  if (state.day === 3 && seen.full) return t('note.alone');
+  return '';
+}
+
 function noteFor(cust) {
   if (state.phase !== 'shop') return '';
+  const plan = tutorialDay(state);
+  if (plan) return tutorialNote(cust, plan);
   const seen = state.ailmentsSeen[cust.ailment];
   if (state.day === 1 && state.current === 0) return t('note.first');
   if (state.day === 1 && state.current === 1) return t('note.remove');
@@ -170,8 +207,10 @@ function bubble(cust) {
 }
 
 function scalesBlock() {
-  return `<section class="scales" id="scales">${SCALES.map(k => `
-    <div class="scale-row" data-k="${k}">
+  const plan = tutorialDay(state);
+  const slideIn = plan && plan.newScale && state.phase === 'shop' && state.current === Math.max(0, firstOnNewScale(plan)) ? plan.newScale : null;
+  return `<section class="scales" id="scales">${shownScales().map(k => `
+    <div class="scale-row ${k === slideIn ? 'new-scale' : ''}" data-k="${k}">
       <div class="scale-label">${scaleIcon(k)}<span>${esc(scaleName(k))}</span></div>
       <div class="scale-track">${scaleSVG(k)}</div>
       <div class="scale-val" data-k="${k}">0</div>
@@ -217,11 +256,13 @@ function updateScales() {
 
 function slotsHtml() {
   const n = G.slots(state);
+  const cust = G.currentCustomer(state);
+  const hintLast = !!(tutorialDay(state) && cust && offMark(cust));
   let out = '';
   for (let i = 0; i < n; i++) {
     const id = state.cauldron[i];
     out += id
-      ? `<button class="slot full" data-act="remove" data-i="${i}" aria-label="${esc(ingName(id))}">${plantSVG(id)}</button>`
+      ? `<button class="slot full ${hintLast && i === state.cauldron.length - 1 ? 'hint' : ''}" data-act="remove" data-i="${i}" aria-label="${esc(ingName(id))}">${plantSVG(id)}</button>`
       : `<span class="slot empty"></span>`;
   }
   return out;
@@ -242,13 +283,25 @@ function shelfHtml() {
   }).join('');
 }
 
+function brewHint() {
+  const cust = G.currentCustomer(state);
+  return !!(tutorialDay(state) && state.day === 1 && cust && cust.ailment === 'chillcough' && state.cauldron.length);
+}
+
 function updateShop() {
+  const cust = G.currentCustomer(state);
+  const note = app.querySelector('#note');
+  if (note && cust) {
+    const text = noteFor(cust);
+    note.textContent = text ? `☞ ${text}` : '';
+    note.hidden = !text;
+  }
   const slots = app.querySelector('#slots');
   if (slots) slots.innerHTML = slotsHtml();
   const shelf = app.querySelector('#shelf');
   if (shelf) shelf.innerHTML = shelfHtml();
   const pot = app.querySelector('.cauldron');
-  if (pot) pot.classList.toggle('ready', state.cauldron.length > 0);
+  if (pot) { pot.classList.toggle('ready', state.cauldron.length > 0); pot.classList.toggle('hint', brewHint()); }
   updateScales();
 }
 
@@ -260,7 +313,7 @@ function resultPanel() {
     lines += `<p class="stamp">${r.stars ? starStamp(r.stars) : `<span class="flop">${esc(t('result.stars0'))}</span>`}</p>`;
     lines += `<p>${esc(t('result.coins', { coins: r.coins }))} ${r.tip ? esc(t('result.tip', { tip: r.tip })) : ''} · ${esc(t('result.rep', { rep: r.rep }))}</p>`;
     const byId = {};
-    for (const d of r.discoveries) (byId[d.id] ||= []).push(d);
+    for (const d of r.discoveries) if (onShown(d.scale)) (byId[d.id] ||= []).push(d);
     const items = Object.entries(byId).map(([id, ds]) => {
       const nz = ds.filter(d => d.value !== 0).map(d => `${scaleName(d.scale)} ${signed(d.value)}`);
       return `<li>${plantSVG(id)}<span><b>${esc(ingName(id))}</b>: ${esc(nz.length ? nz.join(', ') : ds.map(d => `${scaleName(d.scale)} 0`).join(', '))}</span></li>`;
@@ -283,12 +336,12 @@ function renderShop() {
     ? resultPanel()
     : `<section class="cauldron-area">
         <div class="slots" id="slots">${slotsHtml()}</div>
-        <button class="cauldron ${state.cauldron.length ? 'ready' : ''}" data-act="brew" aria-label="${esc(t('shop.brew'))}">${cauldronSVG()}<span class="brew-label">${esc(t('shop.brew'))}</span></button>
+        <button class="cauldron ${state.cauldron.length ? 'ready' : ''} ${brewHint() ? 'hint' : ''}" data-act="brew" aria-label="${esc(t('shop.brew'))}">${cauldronSVG()}<span class="brew-label">${esc(t('shop.brew'))}</span></button>
       </section>
       <section class="shelf" id="shelf">${shelfHtml()}</section>
       <div class="shop-foot"><button class="link" data-act="sendaway">${esc(t('shop.sendAway'))}</button></div>`;
   return `${bubble(cust)}
-    ${note ? `<p class="note">☞ ${esc(note)}</p>` : ''}
+    <p class="note" id="note" ${note ? '' : 'hidden'}>${note ? `☞ ${esc(note)}` : ''}</p>
     ${scalesBlock()}
     ${lower}`;
 }
@@ -298,7 +351,7 @@ function renderEvening() {
   const log = state.dayLog;
   const lvl = state.level;
   const next = BALANCE.levels[lvl];
-  const market = G.unlockedIngredients(lvl).map(ing => `
+  const market = G.unlockedIngredients(lvl).filter(ing => ingredientShown(state, ing.id, state.day + 1)).map(ing => `
     <button class="ware" data-act="buy" data-id="${ing.id}">${plantSVG(ing.id)}
       <span class="ware-name">${esc(ingName(ing.id))}</span>
       <span class="ware-price">${esc(t('evening.cost', { cost: ing.price }))}</span>
@@ -330,10 +383,10 @@ function renderEvening() {
 function bookHerbs() {
   const know = knowledge();
   const met = new Set(state.records.flatMap(r => Object.keys(r.counts)));
-  const list = INGREDIENTS.filter(i => i.level <= state.level && i.source !== 'story' || state.shelf[i.id] || met.has(i.id));
+  const list = INGREDIENTS.filter(i => (i.level <= state.level && i.source !== 'story' || state.shelf[i.id] || met.has(i.id)) && ingredientShown(state, i.id));
   const locked = INGREDIENTS.length - list.length;
   const cards = list.map(ing => {
-    const parts = SCALES.map(k => {
+    const parts = shownScales().map(k => {
       if (isKnown(know, ing.id, k)) {
         const v = know.exact[ing.id][k];
         return v ? `<span class="val">${esc(scaleName(k))} ${signed(v)}</span>` : '';
@@ -348,7 +401,7 @@ function bookHerbs() {
 }
 
 function bookAilments() {
-  const list = AILMENTS.filter(a => !a.story && a.level <= state.level);
+  const list = AILMENTS.filter(a => !a.story && a.level <= state.level && Object.keys(a.target).every(onShown));
   return list.map(a => {
     const seen = state.ailmentsSeen[a.id];
     if (!seen) return `<div class="card dim"><div><b>?</b><div class="small">${esc(t('book.ailUnknown'))}</div></div></div>`;
@@ -364,7 +417,7 @@ function bookBrews() {
   if (!recs.length) return `<p class="small center">${esc(t('book.noBrews'))}</p>`;
   return recs.map(r => {
     const ings = Object.entries(r.counts).map(([id, n]) => `${ingName(id)}${n > 1 ? ` ×${n}` : ''}`).join(' + ');
-    const res = SCALES.map(k => `${k} ${signed(r.result[k])}${r.clamped[k] ? '!' : ''}`).join(' · ');
+    const res = shownScales().map(k => `${k} ${signed(r.result[k])}${r.clamped[k] ? '!' : ''}`).join(' · ');
     return `<div class="brew-line"><span>${esc(ings)}</span><span class="small">${esc(res)} · ${r.stars ? '★'.repeat(r.stars) : '✗'}</span></div>`;
   }).join('');
 }
@@ -386,6 +439,7 @@ function renderSettings() {
     <header class="ov-head"><h2 class="rubric">${esc(t('set.title'))}</h2><button class="iconbtn close" data-act="close" aria-label="${esc(t('close'))}">✕</button></header>
     <div class="ov-body settings">
       <div class="set-row"><span>${esc(t('set.text'))}</span><span class="tabs">${sizes}</span></div>
+      <div class="set-row"><span>${esc(t('set.tutorial'))}</span><button class="tab on" data-act="tutorial">${esc(prefs.tutorial !== false ? t('set.on') : t('set.off'))}</button></div>
       <div class="set-row"><span>${esc(t('set.motion'))}</span><button class="tab on" data-act="motion">${esc(prefs.reducedMotion ? t('set.on') : t('set.off'))}</button></div>
       ${state ? `<h3 class="rubric">${esc(t('set.export'))}</h3>
         <p class="small">${esc(t('set.exportNote'))}</p>
@@ -471,7 +525,7 @@ function act(name, el) {
     case 'new':
       if (loadGame(storage) && !ui.newConfirm) { ui.newConfirm = true; render(); break; }
       ui.newConfirm = false;
-      state = G.newGame(randomSeed());
+      state = G.newGame(randomSeed(), { tutorial: prefs.tutorial !== false });
       screen = 'game'; persist(); render();
       break;
     case 'open': set(G.openShop(state)); break;
@@ -503,6 +557,7 @@ function act(name, el) {
     case 'tab': bookTab = d.tab; render(); break;
     case 'text': prefs.textSize = d.size; savePrefs(); render(); break;
     case 'motion': prefs.reducedMotion = !prefs.reducedMotion; savePrefs(); render(); break;
+    case 'tutorial': prefs.tutorial = prefs.tutorial === false; savePrefs(); render(); break;
     case 'export': ui.exportText = exportCode(state); render(); break;
     case 'playlog': ui.logText = playtestLog(state, { version: VERSION }); render(); break;
     case 'copy': case 'copylog': {
@@ -561,7 +616,7 @@ app.addEventListener('pointerdown', e => {
     suppressClick = true;
     const id = el.dataset.id;
     const know = knowledge();
-    const known = SCALES.filter(k => isKnown(know, id, k) && know.exact[id][k] !== 0).map(k => `${scaleName(k)} ${signed(know.exact[id][k])}`);
+    const known = shownScales().filter(k => isKnown(know, id, k) && know.exact[id][k] !== 0).map(k => `${scaleName(k)} ${signed(know.exact[id][k])}`);
     const full = fullyKnown(know, id);
     tip(`${ingName(id)}: ${full ? (known.join(', ') || '0') : (known.length ? `${known.join(', ')}, more ?` : t('shop.unknownNote'))}`);
   }, 450);

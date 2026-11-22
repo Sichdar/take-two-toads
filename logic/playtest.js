@@ -24,6 +24,7 @@ export function playtestLog(state, { version = '?', days = 3, date = new Date() 
   lines.push(`Take Two Toads playtest log · v${version} · ${d}`);
   lines.push(`Now: day ${state.day} (${state.phase}), level ${state.level}, reputation ${state.rep}, coins ${state.coins}`);
 
+  lines.push(`Step-by-step start: ${state.tutorial ? 'on' : 'off'}`);
   const next = BALANCE.levels[state.level];
   if (next !== undefined) lines.push(`Next level at ${next} reputation`);
 

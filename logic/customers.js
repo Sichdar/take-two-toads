@@ -8,16 +8,18 @@ export function unlockedAilments(level) {
   return AILMENTS.filter(a => !a.story && a.level <= level);
 }
 
+// plan: the step-by-step start's day (data/tutorial.js), or null for a normal day.
 // Returns [{ ailment, villager, returning }]
-export function pickDay({ seed, day, level, returning = [] }) {
+export function pickDay({ seed, day, level, returning = [], plan = null }) {
   const rng = makeRng(hashSeed(seed, day, 7));
   const n = BALANCE.customersPerDay;
-  const pool = unlockedAilments(level);
+  const pool = unlockedAilments(level)
+    .filter(a => !plan || Object.keys(a.target).every(k => plan.scales.includes(k)));
   const used = new Set();
   const queue = [];
 
   // Day 1 always starts with Old Hessa's chill-cough (the first lesson).
-  if (day === 1) {
+  if (day === 1 && !plan) {
     queue.push({ ailment: 'chillcough', villager: 'hessa', returning: false });
     used.add('chillcough');
   }
@@ -27,6 +29,15 @@ export function pickDay({ seed, day, level, returning = [] }) {
     if (!a) continue;
     queue.push({ ailment: a.id, villager: a.villager, returning: true });
     used.add(a.id);
+  }
+  if (plan) {
+    for (const id of plan.queue) {
+      if (queue.length >= n || used.has(id)) continue;
+      const a = AILMENTS.find(x => x.id === id);
+      queue.push({ ailment: a.id, villager: a.villager, returning: false });
+      used.add(a.id);
+    }
+    if (!plan.fill) return queue;
   }
   while (queue.length < n) {
     const left = pool.filter(a => !used.has(a.id));
